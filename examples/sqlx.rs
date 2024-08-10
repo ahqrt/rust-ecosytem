@@ -1,5 +1,6 @@
 use anyhow::{Ok, Result};
 use dotenv::dotenv;
+use futures::TryStreamExt;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPoolOptions;
 use std::env;
@@ -30,7 +31,7 @@ async fn main() -> Result<()> {
 
     // insert into database users
 
-    // let user = sqlx::query_as::<_, User>(
+    // sqlx::query_as::<_, User>(
     //     "INSERT INTO users (username, email, description) VALUES ($1, $2, $3) RETURNING *",
     // )
     // .bind("John1 Doe")
@@ -49,11 +50,19 @@ async fn main() -> Result<()> {
 
     // update user with id 2, set username to victor
 
-    sqlx::query("UPDATE users SET username = $1 WHERE id = $2 RETURNING *")
-        .bind("victor")
+    // sqlx::query("UPDATE users SET username = $1 WHERE id = $2 RETURNING *")
+    //     .bind("victor")
+    //     .bind(3)
+    //     .fetch_one(&pool)
+    //     .await?;
+
+    let mut users = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
         .bind(3)
-        .fetch_one(&pool)
-        .await?;
+        .fetch(&pool);
+
+    while let Some(user) = users.try_next().await? {
+        println!("{:?}", user);
+    }
 
     Ok(())
 }
